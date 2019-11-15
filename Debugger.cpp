@@ -401,4 +401,3 @@ void Debugger::dumpRegisters()
         std::cout << i->second.name << ": 0x" << getRegisterValue(i->second.regEnum) << std::endl;
     }
 }
-            
