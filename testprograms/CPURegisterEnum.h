@@ -8,7 +8,7 @@ class CPURegisterEnum
 public:
     CPURegisterEnum() { }
 
-    ~CPURegisterEnum() { }
+    ~CPURegisterEnum();
 
     // Copied from <sys/user.h>
     enum CPURegister
@@ -39,12 +39,9 @@ public:
         ds,
         es,
         fs,
-        gs,
-        NUMREGS        
+        gs
     };
-
 };
-
 
 
 #endif //CPUREGISTERENUM_H

@@ -4,8 +4,11 @@
 #include <string>
 #include <ext/hash_map>
 #include <sys/types.h>
+#include <map>
 
 #include "Breakpoint.h"
+#include "CPURegisterEnum.h"
+#include "CPURegisterDescriptor.h"
 
 using __gnu_cxx::hash_map;
 
@@ -19,10 +22,15 @@ public:
 
     typedef std::pair<std::string, std::string> CommandPairType;
 
+    uint64_t getRegisterValue(const CPURegisterEnum::CPURegister reg);
+    void setRegisterValue(const CPURegisterEnum::CPURegister reg, uint64_t value);
+    void dumpRegisters();
+
 private:
     std::string progName;
     pid_t pid;
     hash_map<uint64_t, Breakpoint> breakpointMap;
+    std::map<std::string, CPURegisterDescriptor> registerDescriptors;
 };
 
 #endif // DEBUGGER_H

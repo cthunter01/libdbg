@@ -27,6 +27,8 @@
 *.lib
 
 # Executables
+hello_test
+debugger
 *.exe
 *.out
 *.app
