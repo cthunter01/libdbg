@@ -55,34 +55,19 @@ Debugger::Debugger(const std::string& inProgName, const pid_t& inPid)
 
 void Debugger::run()
 {
-    int wait_status(0);
-    int options(0);
-    waitpid(pid, &wait_status, options);
+    waitForSignal();
 
     // Read command file
-    std::ifstream inFile("commandfile.txt", std::fstream::in);
-
-    typedef std::pair<std::string, std::string> CommandPairType;
-    CommandPairType commandPair;
-    std::vector<CommandPairType> commands;
-    std::vector<std::string> commandLines;
-
-    std::string line;
-
-    // get all command lines
-    while(std::getline(inFile, line))
-    {
-        commandLines.push_back(line);
-    }
-    inFile.close();
-
-    std::cout << "Read " << commandLines.size() << " lines\n";
+    std::vector<std::string> commandLines = readCommandFile("commandFile.txt");
 
     // handle commands
     for(std::vector<std::string>::iterator i = commandLines.begin(); i != commandLines.end(); ++i)
     {
         handleCommand(*i);
     }
+
+    // (re)start the debuggee and open a command prompt for interactive use
+    ptrace(PTRACE_CONT, pid, 0, 0);
 
     std::string input;
     std::cout << "ldbg> ";
@@ -97,15 +82,14 @@ void Debugger::run()
 
 void Debugger::continueExecution()
 {
+    stepOverBreakpoint();
     ptrace(PTRACE_CONT, pid, 0, 0);
-    int waitStatus(0);
-    int options(0);
-    waitpid(pid, &waitStatus, options);
+    waitForSignal();
 }
 
 int Debugger::handleCommand(const std::string& line)
 {
-    //std::cout << "handleCommand() recieved command \"" << line << "\"" << std::endl;
+    std::cout << "Received command: " << line << std::endl;
     std::stringstream ss(line);
     std::string item;
     std::vector<std::string> args;
@@ -146,15 +130,16 @@ int Debugger::handleCommand(const std::string& line)
         if(args[1] == "read")
         {
             uint64_t val = getRegisterValue(registerDescriptors[args[1]].regEnum);
+            std::cout << val << std::endl;
         }
         if(args[1] == "write")
         {
             char* end;
-            setRegisterValue(registerDescriptors[args[1]].regEnum, std::strtol(args[2].c_str(), &end, 16));
+            std::string valToWrite(args[3], 2, std::string::npos);
+            setRegisterValue(registerDescriptors[args[2]].regEnum, std::strtol(valToWrite.c_str(), &end, 16));
         }
         if(args[1] == "dump")
         {
-            char* end;
             dumpRegisters();
         }
     }
@@ -400,4 +385,48 @@ void Debugger::dumpRegisters()
     {
         std::cout << i->second.name << ": 0x" << getRegisterValue(i->second.regEnum) << std::endl;
     }
+}
+
+void Debugger::waitForSignal()
+{
+    int waitStatus(0);
+    int options(0);
+    waitpid(pid, &waitStatus, options);
+}
+
+void Debugger::stepOverBreakpoint()
+{
+    uint64_t bpLoc = getRegisterValue(CPURegisterEnum::rip) - 1;
+
+    if(breakpointMap.find(bpLoc) != breakpointMap.end())
+    {
+        Breakpoint& bp = breakpointMap[bpLoc];
+        if(bp.isEnabled())
+        {
+            setRegisterValue(CPURegisterEnum::rip, bpLoc);
+            bp.disable();
+            ptrace(PTRACE_SINGLESTEP, pid, NULL, NULL);
+            waitForSignal();
+            bp.enable();
+        }
+    }
+}
+
+std::vector<std::string> Debugger::readCommandFile(const std::string& inFileName)
+{
+
+    std::ifstream inFile("commandfile.txt", std::fstream::in);
+    std::vector<std::string> commandLines;
+
+    std::string line;
+
+    // get all command lines
+    while(std::getline(inFile, line))
+    {
+        commandLines.push_back(line);
+    }
+    inFile.close();
+
+    std::cout << "Read " << commandLines.size() << " lines\n";
+    return commandLines;
 }

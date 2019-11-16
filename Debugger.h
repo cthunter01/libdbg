@@ -31,6 +31,10 @@ private:
     pid_t pid;
     hash_map<uint64_t, Breakpoint> breakpointMap;
     std::map<std::string, CPURegisterDescriptor> registerDescriptors;
+
+    void waitForSignal();
+    void stepOverBreakpoint();
+    std::vector<std::string> readCommandFile(const std::string& inFileName = "commandfile.txt");
 };
 
 #endif // DEBUGGER_H
