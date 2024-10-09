@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
         // We're in the parent process
         // Run the debugger
 
-        std::cout << "Debugger attaching to process pid: " << pid << std::endl;
+        std::cout << "Debugger attaching to process pid: " << pid << "\n";
         std::string progName(argv[1]);
         Debugger dbg(progName, pid);
         dbg.run();
